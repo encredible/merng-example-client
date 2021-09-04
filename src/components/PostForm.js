@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { useForm } from '../util/hooks'
 import {Button, Form} from "semantic-ui-react";
 import {useMutation, gql} from "@apollo/client";
@@ -7,8 +7,9 @@ function PostForm() {
   const { values, onChange, onSubmit } = useForm(createPostCallback, {
     body: ''
   })
+  const [error, setError] = useState('')
 
-  const [createPost, { error }] = useMutation(CREATE_POST_MUTATION, {
+  const [createPost] = useMutation(CREATE_POST_MUTATION, {
     variables: values,
     update(proxy, result) {
       const data = proxy.readQuery({
@@ -19,27 +20,42 @@ function PostForm() {
         data: { getPosts: [result.data.createPost, ...data.getPosts] }
       });
       values.body = ''
+    },
+    onError(err) {
+      console.log(err.graphQLErrors[0])
+      setError(err.graphQLErrors[0].message)
     }
   })
 
   function createPostCallback() {
     createPost();
   }
+
   return (
-    <Form onSubmit={onSubmit}>
-      <h2>Create a post:</h2>
-      <Form.Field>
-        <Form.Input
-          placeholder="Hi World!"
-          name="body"
-          onChange={onChange}
-          value={values.body}
-          />
-        <Button type="submit" color="teal">
-          Submit
-        </Button>
-      </Form.Field>
-    </Form>
+    <>
+      <Form onSubmit={onSubmit}>
+        <h2>Create a post:</h2>
+        <Form.Field>
+          <Form.Input
+            placeholder="Hi World!"
+            name="body"
+            onChange={onChange}
+            value={values.body}
+            error={!!error}
+            />
+          <Button type="submit" color="teal">
+            Submit
+          </Button>
+        </Form.Field>
+      </Form>
+      {error && (
+        <div className="ui error message" style={{ marginBottom: 20 }}>
+          <ul className="list">
+            <li>{error}</li>
+          </ul>
+        </div>
+      )}
+    </>
   )
 }
 
